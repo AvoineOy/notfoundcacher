@@ -1,0 +1,134 @@
+<?php
+
+class NotFoundCacher extends WireData implements Module, ConfigurableModule {
+  // Where the cache file should live
+  private $cacheFile;
+  
+  // How long the cache file should live
+  public $ttl = 3600;
+  
+  /*
+   *
+   *
+   * Module info
+   *
+   *
+   */
+  public static function getModuleInfo() {
+    return [
+      'title'   => 'Not Found Cacher',
+      'author'  => 'Avoine Oy',
+      'version' => '1.1.1',
+      'summary' => 'Caches the 404 page.',
+      'singular' => true,
+      'autoload' => true,
+    ];
+  }
+  
+  /*
+   *
+   *
+   * Hooks
+   *
+   *
+   */
+  public function init() {
+    // Display and validate cache through this one
+    $this->addHookBefore('ProcessPageView::pageNotFound', $this, 'readCache');
+    // Cache the rendered 404 page throuh this one
+    $this->addHookAfter('ProcessPageView::pageNotFound', $this, 'saveCache');
+    
+    $this->setCacheFile($this->config->paths->cache . '404.html');
+  }
+  
+  /*
+   *
+   *
+   * Check if there's a valid cached page and display it
+   *
+   *
+   */
+  public function readCache(HookEvent $event) {
+    if(!$this->user->isGuest()) {
+      // Never show cached pages for logged users
+      return;
+    } elseif($this->cacheFile === false) {
+      // We don't have a valid cache file
+      return;
+    } elseif(time() - filemtime($this->cacheFile) > $this->ttl) {
+      // Cache has expired
+      return;
+    } else {
+      // Display the cached file
+      $event->return = file_get_contents($this->cacheFile);
+      $event->replace = true;
+    }
+  }
+  
+  
+  /*
+   *
+   *
+   * Updates the cached 404 page
+   *
+   *
+   */
+  public function saveCache(HookEvent $event) {
+    if(!$this->user->isGuest()) {
+      // Never update the cache when logged in
+      return;
+    } elseif($event->replace === true) {
+      // Cached content was already served through the previous hook
+      return;
+    } elseif($this->cacheFile === false) {
+      // We don't have a valid cache file
+      return;
+    }
+    file_put_contents($this->cacheFile, $event->return);
+  }
+  
+  
+  /*
+   *
+   *
+   * Validates the given cache file is writable
+   *
+   *
+   */
+  public function setCacheFile($fullpath) {
+    if(file_exists($fullpath) and !is_writable($fullpath)) {
+      $this->error('Cache disabled! Can not write to ' . $fullpath);
+      $this->cacheFile = false;
+    } elseif(!is_writable(dirname($fullpath))) {
+      $this->error('Cache disabled! Can not write to ' . basename($fullpath));
+      $this->cacheFile = false;
+    } else {
+      $this->cacheFile = $fullpath;
+    }
+  }
+
+  
+  /*
+   *
+   *
+   * Module config fields
+   *
+   *
+   */
+  static public function getModuleConfigInputfields(array $data) {
+    $ttl = isset($data['ttl']) ? $data['ttl'] : '';
+
+    $fields = new InputfieldWrapper();
+
+    $field = wire('modules')->get("InputfieldInteger");
+    $field->name = "ttl";
+    $field->label = "TTL";
+    $field->description = "How long should the cached 404 page live (in seconds)";
+    $field->notes = "The default is 1 hour (3600 seconds).";
+    $field->attr('value', $ttl);
+    
+    $fields->add($field);
+
+    return $fields;
+  }
+}
