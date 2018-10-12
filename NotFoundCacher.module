@@ -53,8 +53,11 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
       // Cache has expired
       return;
     } else {
-      // Display the cached file
+      // Send the header (since we bypass the default PW handler)
+      header("HTTP/1.1 404 Page Not Found");
+      // Tell PW to display the cached file
       $event->return = file_get_contents($this->cacheFile);
+      // Don't execute the PW handler
       $event->replace = true;
     }
   }
