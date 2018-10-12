@@ -9,9 +9,7 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
   
   /*
    *
-   *
    * Module info
-   *
    *
    */
   public static function getModuleInfo() {
@@ -27,9 +25,7 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
   
   /*
    *
-   *
    * Hooks
-   *
    *
    */
   public function init() {
@@ -37,15 +33,13 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
     $this->addHookBefore('ProcessPageView::pageNotFound', $this, 'readCache');
     // Cache the rendered 404 page throuh this one
     $this->addHookAfter('ProcessPageView::pageNotFound', $this, 'saveCache');
-    
+    // Assign the default location for the cache file    
     $this->setCacheFile($this->config->paths->cache . '404.html');
   }
   
   /*
    *
-   *
    * Check if there's a valid cached page and display it
-   *
    *
    */
   public function readCache(HookEvent $event) {
@@ -68,9 +62,7 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
   
   /*
    *
-   *
    * Updates the cached 404 page
-   *
    *
    */
   public function saveCache(HookEvent $event) {
@@ -90,17 +82,17 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
   
   /*
    *
-   *
    * Validates the given cache file is writable
-   *
    *
    */
   public function setCacheFile($fullpath) {
     if(file_exists($fullpath) and !is_writable($fullpath)) {
+      // The file exists and is not writable
       $this->error('Cache disabled! Can not write to ' . $fullpath);
       $this->cacheFile = false;
     } elseif(!is_writable(dirname($fullpath))) {
-      $this->error('Cache disabled! Can not write to ' . basename($fullpath));
+      // Cannot create new files under the directory
+      $this->error('Cache disabled! Can not write to ' . dirname($fullpath));
       $this->cacheFile = false;
     } else {
       $this->cacheFile = $fullpath;
@@ -110,9 +102,7 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
   
   /*
    *
-   *
    * Module config fields
-   *
    *
    */
   static public function getModuleConfigInputfields(array $data) {
