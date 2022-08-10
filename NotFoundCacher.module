@@ -19,7 +19,7 @@ class NotFoundCacher extends WireData implements Module, ConfigurableModule {
     return [
       'title'   => 'Not Found Cacher',
       'author'  => 'Avoine Oy',
-      'version' => '1.1.4',
+      'version' => '1.1.5',
       'summary' => 'Caches the 404 page.',
       'singular' => true,
       'autoload' => true,
